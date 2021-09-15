@@ -556,6 +556,9 @@ func (stmt *defaultStmt) read(dataSet *DataSet) error {
 								}
 								continue
 							}
+							if dataSet.Cols[x].MaxLen <= 0 {
+								continue
+							}
 							dataSet.Cols[x].BValue, err = session.GetClr()
 							//fmt.Println("buffer: ", temp)
 							if err != nil {

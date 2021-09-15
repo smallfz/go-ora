@@ -887,6 +887,45 @@ func (session *Session) GetClr() (output []byte, err error) {
 		output, err = session.read(int(size))
 		return
 	}
+
+	if !session.UseBigClrChunks {
+		buff := &bytes.Buffer{}
+		for {
+			h, err := session.GetByte()
+			if err != nil {
+				return nil, err
+			}
+			if h == 0x00 {
+				break
+			} else if h == 0xff {
+				maxTry := 1024 * 4
+				for {
+					b, err := session.GetByte()
+					if err != nil {
+						return nil, err
+					}
+					if b == 0x00 {
+						break
+					}
+					buff.WriteByte(b)
+					if buff.Len() >= maxTry {
+						break
+					}
+				}
+				break
+			} else if h >= 64 {
+				return nil, fmt.Errorf("invalid chunk size: %v", h)
+			} else {
+				dat, err := session.read(int(h))
+				if err != nil {
+					return nil, err
+				}
+				buff.Write(dat)
+			}
+		}
+		return buff.Bytes(), nil
+	}
+
 	//output = make([]byte, 0, 1000)
 	var tempBuffer bytes.Buffer
 	for {
